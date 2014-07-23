@@ -13,12 +13,20 @@ void usage(void)
     exit(1);
 }
 
-void test_astar();
+void test()
+{
+    Point start(1, 5), target(5, 5);
+    Path obst = {{3, 2}, {3, 3}, {3, 4}, {3, 5}};
+    Path final = astar(5, start, target, obst);
+    for (Path::reverse_iterator it = final.rbegin(); it != final.rend(); ++it) {
+        printf("%d %d\n", it->x, it->y);
+    }
+    exit(EXIT_SUCCESS);
+}
 
 int main(int argc, char **argv)
 {
-    test_astar();
-    return 0;
+    test();
     int size, ch;
     program_name = argv[0];
     size = 10;
@@ -50,13 +58,5 @@ int main(int argc, char **argv)
     for (Path::reverse_iterator it = final.rbegin(); it != final.rend(); ++it) {
         printf("%d %d", it->x, it->y);
     }
-    return 0;
+    return EXIT_SUCCESS;
 }
-
-void test_astar()
-{
-    Point start = {3, 5}, target = {9, 9};
-    Path obstacles = {{7, 0}, {7, 1}, {7, 2}, {7,6}, {7, 7}, {7,8}};
-    Path final = astar(10, start, target, obstacles);
-}
-
