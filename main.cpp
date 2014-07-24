@@ -1,3 +1,11 @@
+//
+//  main.cpp
+//  astar
+//
+//  Created by Connor Monahan on 7/20/14.
+//  Copyright (c) 2014 Ratchet Rockers. All rights reserved.
+//
+
 #include <iostream>
 #include <unistd.h>
 #include <err.h>
@@ -26,7 +34,6 @@ void test()
 
 int main(int argc, char **argv)
 {
-    test();
     int size, ch;
     program_name = argv[0];
     size = 10;
@@ -47,16 +54,16 @@ int main(int argc, char **argv)
         usage();
     Point start, target;
     sscanf(argv[0], "%d,%d", &start.x, &start.y);
-    sscanf(argv[0], "%d,%d", &target.x, &target.y);
+    sscanf(argv[1], "%d,%d", &target.x, &target.y);
     Path obstacles;
     Point current;
-    while ((ch = scanf("%d %d", &current.x, &current.y)) != EOF) {
+    while ((ch = scanf("%d %d\n", &current.x, &current.y)) != EOF) {
         if (ch == 2)
             obstacles.push_back(current);
     }
     Path final = astar(size, start, target, obstacles);
     for (Path::reverse_iterator it = final.rbegin(); it != final.rend(); ++it) {
-        printf("%d %d", it->x, it->y);
+        printf("%d %d\n", it->x, it->y);
     }
     return EXIT_SUCCESS;
 }

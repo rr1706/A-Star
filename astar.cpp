@@ -13,97 +13,101 @@
 #include <sstream>
 #include <memory>
 
-static double distance(Point one, Point two)
+template<class P>
+static double distance(P one, P two)
 {
     return sqrt(pow(one.x - two.x, 2) + pow(one.y - two.y, 2));
 }
 
-Point::Point(int x, int y, Point *parent) : x(x), y(y), parent(parent), goal(NULL)
+template<class P, class Container>
+static inline bool position_open(P pos, Container& obstacles, int size)
 {
-    if (parent != NULL) {
-        g = distance(*parent, *this);
-        goal = parent->goal;
-    } else {
-        g = 1;
-    }
-    eucH();
-}
-
-bool Point::operator==(const Point& oth)
-{
-    return x == oth.x && y == oth.y;
-}
-
-int Point::total_cost()
-{
-    return g + h;
-}
-
-std::string Point::str()
-{
-    std::stringstream ss;
-    ss << "x: " << x << " y: " << y;
-    return ss.str();
-}
-
-void Point::eucH()
-{
-    if (goal != NULL) {
-        h = distance(*this, *goal);
-    } else {
-        h = 0;
-    }
-}
-
-static bool obst_open(Path& list, int size, Point pt)
-{
-    if (pt.x < 0 || pt.y < 0 || pt.x > size || pt.y > size)
-        return false;
-    for (Point& p : list)
-        if (p == pt)
-            return false;
+    if (pos.x < 0 || pos.y < 0 || pos.x > size || pos.y > size)
+        return false; // out of bounds
+    for (typename Container::iterator it = obstacles.begin(); it < obstacles.end(); ++it)
+        if (*it == pos)
+            return false; // blocked
     return true;
 }
 
-static pPath::iterator get(pPath &list, Point pt)
-{
-    for (pPath::iterator it = list.begin(); it < list.end(); ++it)
-        if (**it == pt)
-            return it;
-    return list.end();
-}
-
-std::vector<Point> Point::successors(Path& obstacles, int size)
-{
-    std::vector<Point> successors;
-    for (int xd = -1; xd <= 1; xd++) {
-        for (int yd = -1; yd <= 1; yd++) {
-            Point n(x + xd, y + yd, this);
-            if (obst_open(obstacles, size, n)) {
+class Node {
+public:
+    Node(Point pt, Node *parent = NULL, Node *goal = NULL) : x(pt.x), y(pt.y), parent(parent), goal(goal)
+    {
+        if (parent != NULL) {
+            g = distance(*parent, *this);
+            if (goal == NULL)
+                goal = parent->goal;
+        } else {
+            g = 1;
+        }
+        if (goal != NULL) {
+            h = distance(*this, *goal);
+        } else {
+            h = 0;
+        }
+    }
+    int x, y, g, h;
+    Node *parent;
+    Node *goal;
+    friend bool operator==(const Node& one, const Node& two)
+    {
+        return one.x == two.x && one.y == two.y;
+    }
+    friend bool operator!=(const Node& one, const Node& two)
+    {
+        return one.x != two.x || one.y != two.y;
+    }
+    friend bool operator<(const Node& one, const Node& two)
+    {
+        return one.x < two.x && one.y < two.y;
+    }
+    int total_cost(void)
+    {
+        return g + h;
+    }
+    template<class Container>
+    std::vector<Node> successors(Container &obstacles, int size)
+    {
+        std::vector<Node> successors;
+        for (int xd = -1; xd <= 1; xd++) {
+            for (int yd = -1; yd <= 1; yd++) {
+                Node n({x + xd, y + yd}, this);
+                if (!position_open(n, obstacles, size))
+                    continue;
                 if (n == *this || (parent != NULL && n == *parent))
                     continue;
                 successors.push_back(n);
             }
         }
+        return successors;
     }
-    return successors;
-}
+};
 
-bool operator<(const Point& one, const Point& two)
+Point::Point(int x, int y) : x(x), y(y)
 {
-    return one.x < two.x && one.y < two.y;
 }
 
-static Point* min(std::vector<Point*> &stp)
+template<class Container>
+static typename Container::iterator get(Container& list, Node pt)
+{
+    for (typename Container::iterator it = list.begin(); it < list.end(); ++it)
+        if (**it == pt)
+            return it;
+    return list.end();
+}
+
+template<class Container>
+static Node* min(Container& stp)
 {
     if (stp.empty())
         throw std::runtime_error("stp empty");
-    Point *current = *stp.begin();
+    Node *current = *stp.begin();
     int H = current->total_cost();
-    for (Point *pt : stp) {
-        if (pt->total_cost() < H) {
-            H = pt->total_cost();
-            current = pt;
+    for (typename Container::iterator it = stp.begin(); it < stp.end(); ++it) {
+        if ((*it)->total_cost() < H) {
+            H = (*it)->total_cost();
+            current = *it;
         }
     }
     return current;
@@ -112,31 +116,31 @@ static Point* min(std::vector<Point*> &stp)
 // adapted from a C# implementation
 Path astar(int size, Point start, Point target, Path obstacles)
 {
-    start.goal = &target;
-    start.eucH();
+    Node targetNode(target);
+    Node startNode(start, NULL, &targetNode);
     // open array contain points that still need to be processed
     // closed array contains that have
-    std::vector<Point*> open, closed;
-    open.push_back(new Point(start));
+    std::vector<Node*> open, closed;
+    open.push_back(new Node(startNode));
     while (!open.empty()) {
         // get the point from the open array with the smallest total cost
         // this will be the next point the path will follow
-        Point *current = min(open);
-        for (pPath::iterator it = open.begin(); it < open.end(); ++it) {
+        Node *current = min(open);
+        for (auto it = open.begin(); it < open.end(); ++it) {
             if (*it == current) {
                 open.erase(it); // find the point in the open array and delete it (because it is moving to closed)
                 break;
             }
         }
-        if (*current == target) {
+        if (*current == targetNode) {
             // reached the target, done
-            target.parent = current->parent;
+            targetNode.parent = current->parent;
             break;
         }
         // get a list of all points that the path can potentially take from the current point
         // it checks to make sure it does not chart a course through an obstacle
-        for (Point successor : current->successors(obstacles, size)) {
-            pPath::iterator oIt = get(open, successor), cIt = get(closed, successor);
+        for (Node successor : current->successors(obstacles, size)) {
+            auto oIt = get(open, successor), cIt = get(closed, successor);
             if ((oIt != open.end() && (*oIt)->total_cost() - current->total_cost() <= 0)
                 || (cIt != closed.end() && (*cIt)->total_cost() - current->total_cost() <= 0))
                 continue; // if this point is already in a list and has more cost, ignore it
@@ -150,22 +154,22 @@ Path astar(int size, Point start, Point target, Path obstacles)
                 closed.erase(cIt);
             }
             // submit this new point to process next time to extend the path
-            open.push_back(new Point(successor));
+            open.push_back(new Node(successor));
         }
         // mark the current point as traversed
         closed.push_back(current);
     }
     Path results;
     // Traverse backwards from the target by jumping to each successive parent
-    Point *p = &target;
+    Node *p = &targetNode;
     while (p != NULL) {
-        results.push_back(*p);
+        results.push_back({p->x, p->y});
         p = p->parent;
     }
     // Free some memory from the pointers
-    for (Point *pt : open)
+    for (Node *pt : open)
         delete pt;
-    for (Point *pt : closed)
+    for (Node *pt : closed)
         delete pt;
     return results;
 }
