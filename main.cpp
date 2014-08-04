@@ -43,7 +43,6 @@ int main(int argc, char **argv)
                 sscanf(optarg, "%d", &size);
                 break;
             case '?':
-                warn("illegal option -- %c", ch);
             default:
                 usage();
         }

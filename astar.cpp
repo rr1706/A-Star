@@ -12,6 +12,7 @@
 #include <set>
 #include <sstream>
 #include <memory>
+#include <stdexcept>
 
 template<class P>
 static double distance(P one, P two)
