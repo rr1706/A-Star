@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>
+			1706 A* Obstacle Mapper
+		</title>
+		<script>
+			var drawing = false;
+			var color = "black";
+			var thickness = 4;
+			var lastMouseX = 0;
+			var lastMouseY = 0;
+			var height = 500;
+			var width = 500;
+			function boxmousedown(event) {
+				var mouseX, mouseY, context;
+				if (event.which !== 1)
+					return;
+				event.preventDefault();
+				drawing = true;
+				context = event.target.getContext("2d");
+				if (event.offsetX) {
+					mouseX = event.offsetX;
+					mouseY = event.offsetY;
+				} else if (event.layerX) {
+					mouseX = event.layerX;
+					mouseY = event.layerY;
+				}
+				mouseX = mouseX / (500 / width);
+				mouseY = mouseY / (500 / height);
+				// Draw initial point of line
+				context.beginPath();
+				context.moveTo(mouseX, mouseY);
+				context.lineTo(mouseX + 1, mouseY + 1);
+				context.strokeStyle = color;
+				context.lineCap = "round";
+				context.lineWidth = thickness;
+				context.stroke();
+			}
+			function boxmouseup(event) {
+				var dat, data;
+				drawing = false;
+				lastMouseX = 0;
+				lastMouseY = 0;
+				dat = "";
+				data = document.getElementById("box").getContext("2d").getImageData(0, 0, width, height).data;
+				for (var y = 0; y < height; y++) {
+					for (var x = 0; x < width; x++) {
+						var r = data[((width * y) + x) * 4];
+						var g = data[((width * y) + x) * 4 + 1];
+						var b = data[((width * y) + x) * 4 + 2];
+						var a = data[((width * y) + x) * 4 + 3];
+						if (a > 50) {
+							dat += (x + " " + (height - y - 1) + "\n");
+						}
+					}
+				}
+				document.getElementById("out").innerHTML = dat;
+			}
+			function boxmousemove(event) {
+				var mouseX, mouseY, context;
+				if (!drawing)
+					return;
+				if (event.offsetX) {
+					mouseX = event.offsetX;
+					mouseY = event.offsetY;
+				} else if (event.layerX) {
+					mouseX = event.layerX;
+					mouseY = event.layerY;
+				}
+				mouseX = mouseX / (500 / width);
+				mouseY = mouseY / (500 / height);
+				if (lastMouseX === 0) {
+					lastMouseX = mouseX;
+				}
+				if (lastMouseY === 0) {
+					lastMouseY = mouseY;
+				}
+				context = event.target.getContext("2d");
+				context.beginPath();
+				context.moveTo(lastMouseX, lastMouseY);
+				context.lineTo(mouseX, mouseY);
+				context.strokeStyle = color;
+				context.lineCap = "round";
+				context.lineWidth = thickness;
+				context.stroke();
+				lastMouseX = mouseX;
+				lastMouseY = mouseY;
+			}
+			window.onload = function load() {
+				width = height = prompt("Initial drawing size?", "500");
+				var box = document.getElementById("box");
+				box.width = width;
+				box.height = height;
+				box.onmousedown = boxmousedown;
+				box.onmouseup = boxmouseup;
+				box.onmousemove = boxmousemove;
+			}
+		</script>
+		<style>
+			#box {
+				border: 1px solid black;
+				height: 500px;
+				width: 500px;
+			}
+		</style>
+	</head>
+	<body>
+		<p>Draw in the box by holding down your mouse. An input to astar will output on the right.</p>
+		<canvas id="box" height="500" width="500">
+			Please upgrade to a browser that supports HTML5 canvas
+		</canvas>
+		<textarea id="out" rows="30" cols="20">
+		</textarea>
+	</body>
+</html>
