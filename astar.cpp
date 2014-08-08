@@ -33,7 +33,7 @@ static inline bool position_open(P pos, Container& obstacles, int size)
 
 class Node {
 public:
-    Node(Point pt, Node *parent = NULL, Node *goal = NULL) : x(pt.x), y(pt.y), parent(parent), goal(goal)
+    void compute_costs()
     {
         if (parent != NULL) {
             g = distance(*parent, *this);
@@ -47,6 +47,20 @@ public:
         } else {
             h = 0;
         }
+    }
+    Node()
+    {
+    }
+    Node(Point pt, Node *parent = NULL, Node *goal = NULL) : x(pt.x), y(pt.y), parent(parent), goal(goal)
+    {
+    }
+    void copy(Node &other)
+    {
+        x = other.x;
+        y = other.y;
+        parent = other.parent;
+        goal = other.goal;
+        compute_costs();
     }
     int x, y, g, h;
     Node *parent;
@@ -117,12 +131,19 @@ static Node* min(Container& stp)
 // adapted from a C# implementation
 Path astar(int size, Point start, Point target, Path obstacles)
 {
+    size_t nodeMemMax = size * size;
+    Node *nodeMem = new Node[sizeof(Node) * nodeMemMax];
+    size_t nodeMemSP = 0;
     Node targetNode(target);
-    Node startNode(start, NULL, &targetNode);
     // open array contain points that still need to be processed
     // closed array contains that have
     std::vector<Node*> open, closed;
-    open.push_back(new Node(startNode));
+    {
+        Node startNode(start, NULL, &targetNode);
+        Node *startNodeS = ++nodeMemSP + nodeMem;
+        startNodeS->copy(startNode);
+        open.push_back(startNodeS);
+    }
     while (!open.empty()) {
         // get the point from the open array with the smallest total cost
         // this will be the next point the path will follow
@@ -154,8 +175,13 @@ Path astar(int size, Point start, Point target, Path obstacles)
             if (cIt != closed.end()) {
                 closed.erase(cIt);
             }
+            if (nodeMemSP >= nodeMemMax) {
+                throw new std::runtime_error("Node storage stack ran out of memory");
+            }
+            Node *valid = ++nodeMemSP + nodeMem; // get a new node from the stack
+            valid->copy(successor);
             // submit this new point to process next time to extend the path
-            open.push_back(new Node(successor));
+            open.push_back(valid);
         }
         // mark the current point as traversed
         closed.push_back(current);
@@ -168,9 +194,6 @@ Path astar(int size, Point start, Point target, Path obstacles)
         p = p->parent;
     }
     // Free some memory from the pointers
-    for (Node *pt : open)
-        delete pt;
-    for (Node *pt : closed)
-        delete pt;
+    delete [] nodeMem;
     return results;
 }
