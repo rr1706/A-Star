@@ -114,7 +114,7 @@ private:
     Object *list;
     int max, next;
 public:
-    Stack(int size) : max(size)
+    Stack(int size) : max(size), next(0)
     {
         list = new Object[sizeof(Object) * size];
     }
