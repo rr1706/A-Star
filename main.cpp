@@ -6,12 +6,11 @@
 //  Copyright (c) 2014 Ratchet Rockers. All rights reserved.
 //
 
-#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <err.h>
 #include "astar.h"
-
-using namespace std;
 
 const char *program_name;
 
@@ -19,17 +18,6 @@ void usage(void)
 {
     fprintf(stderr, "usage: %s [-s size] startx,y targetx,y\n", program_name);
     exit(1);
-}
-
-void test()
-{
-    Point start(1, 5), target(5, 5);
-    Path obst = {{3, 2}, {3, 3}, {3, 4}, {3, 5}};
-    Path final = astar(5, start, target, obst);
-    for (Path::reverse_iterator it = final.rbegin(); it != final.rend(); ++it) {
-        printf("%d %d\n", it->x, it->y);
-    }
-    exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char **argv)
