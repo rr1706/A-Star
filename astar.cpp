@@ -59,13 +59,22 @@ public:
     {
         compute_costs();
     }
-    void copy(Node &other)
+    Node(const Node& other)
     {
         x = other.x;
         y = other.y;
         parent = other.parent;
         goal = other.goal;
         compute_costs();
+    }
+    Node& operator=(const Node& other)
+    {
+        x = other.x;
+        y = other.y;
+        parent = other.parent;
+        goal = other.goal;
+        compute_costs();
+        return *this;
     }
     int x, y, g, h;
     Node *parent;
@@ -86,16 +95,17 @@ public:
     {
         return g + h;
     }
-    template<class Container>
-    std::vector<Node> successors(Container &obstacles, int size)
+    std::vector<Node> successors(Path &obstacles, int size)
     {
         std::vector<Node> successors;
         for (int xd = -1; xd <= 1; xd++) {
             for (int yd = -1; yd <= 1; yd++) {
                 Node n(x + xd, y + yd, this);
-                if (!position_open(n, obstacles, size))
+                if (n.x == x && n.y == y)
                     continue;
-                if (n == *this || (parent != NULL && n == *parent))
+                if (parent != NULL && n.x == parent->x && n.y == parent->y)
+                    continue;
+                if (!position_open(n, obstacles, size))
                     continue;
                 successors.push_back(n);
             }
@@ -122,14 +132,14 @@ public:
     {
         delete [] list;
     }
-    Object* create(Object tmpl)
+    Object* create(const Object tmpl)
     {
         if (next >= max)
             throw new std::runtime_error("Stack out of memory");
         // gets an element from a blank position in the list
         Object *elem = list + sizeof(Object) * next++;
         // copies the template data into the blank element
-        elem->copy(tmpl);
+        (*elem) = tmpl;
         return elem;
     }
 };

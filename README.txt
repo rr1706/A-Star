@@ -26,3 +26,18 @@ Format of 'start' and 'target' is a pair of points delimited by a comma.
 Example:
  2,5
 
+Optimizing the library:
+
+By default CMake compiles in debug mode, which is slow because the intended
+purpose is testing. If you want to build the library for use in another
+application and it is working correctly, you can run another command to create
+a faster library.
+
+I have found clang to be the best compiler for the purpose of optimization.
+The process I follow to do this is follows, assuming that the CMakeFiles are
+in the current directory.
+
+make
+clang++ -c -o CMakeFiles/astar.dir/astar.cpp.o -std=c++11 -O3 -Wall astar.cpp
+make
+
