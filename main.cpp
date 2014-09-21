@@ -16,19 +16,24 @@ const char *program_name;
 
 void usage(void)
 {
-    fprintf(stderr, "usage: %s [-s size] startx,y targetx,y\n", program_name);
+    fprintf(stderr, "usage: %s [-s size] [-f file] startx,y targetx,y\n", program_name);
     exit(1);
 }
 
 int main(int argc, char **argv)
 {
     int size, ch;
+    char *file;
     program_name = argv[0];
     size = 10;
-    while ((ch = getopt(argc, argv, "s:")) != -1) {
+    file = NULL;
+    while ((ch = getopt(argc, argv, "s:f:")) != -1) {
         switch (ch) {
             case 's':
                 sscanf(optarg, "%d", &size);
+                break;
+            case 'f':
+                file = strdup(optarg);
                 break;
             case '?':
             default:
@@ -44,9 +49,21 @@ int main(int argc, char **argv)
     sscanf(argv[1], "%d,%d", &target.x, &target.y);
     Path obstacles;
     Point current;
-    while ((ch = scanf("%d %d\n", &current.x, &current.y)) != EOF) {
-        if (ch == 2)
-            obstacles.push_back(current);
+    if (file) {
+        FILE *read = fopen(file, "r");
+        free(file);
+        if (!read)
+            err(1, "Failed to open file");
+        while ((ch = fscanf(read, "%d %d\n", &current.x, &current.y)) != EOF) {
+            if (ch == 2)
+                obstacles.push_back(current);
+        }
+        fclose(read);
+    } else {
+        while ((ch = scanf("%d %d\n", &current.x, &current.y)) != EOF) {
+            if (ch == 2)
+                obstacles.push_back(current);
+        }
     }
     Path final = astar(size, start, target, obstacles);
     for (Path::reverse_iterator it = final.rbegin(); it != final.rend(); ++it) {
